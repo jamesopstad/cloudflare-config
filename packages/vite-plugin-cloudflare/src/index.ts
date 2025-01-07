@@ -1,11 +1,9 @@
 import assert from 'node:assert';
 import * as fs from 'node:fs';
-import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { createMiddleware } from '@hattip/adapter-node';
 import { Miniflare } from 'miniflare';
 import * as vite from 'vite';
-import { transformWithEsbuild } from 'vite';
 import {
 	createCloudflareEnvironmentOptions,
 	initRunners,

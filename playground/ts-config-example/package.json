@@ -1,0 +1,20 @@
+{
+	"name": "@playground/ts-config-example",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "vite build --app",
+		"check:types": "tsc --build",
+		"dev": "vite dev",
+		"preview": "vite preview"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "catalog:default",
+		"@flarelabs-net/cloudflare-config": "workspace:*",
+		"@flarelabs-net/vite-plugin-cloudflare": "workspace:*",
+		"@vite-plugin-cloudflare/typescript-config": "workspace:*",
+		"typescript": "catalog:default",
+		"vite": "catalog:default",
+		"wrangler": "catalog:default"
+	}
+}

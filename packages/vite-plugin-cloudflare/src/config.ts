@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import * as fsp from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import type { build } from 'esbuild';
 
 const _require = createRequire(import.meta.url);
@@ -13,7 +14,13 @@ export async function loadConfigFromFile(root: string) {
 	await fsp.mkdir(tempDirectory, { recursive: true });
 
 	const bundled = await bundleConfigFile(resolvedPath);
-	await loadConfigFromBundledFile(resolvedPath, bundled.code, tempDirectory);
+	const config = await loadConfigFromBundledFile(
+		resolvedPath,
+		bundled.code,
+		tempDirectory,
+	);
+
+	console.log(config);
 }
 
 async function bundleConfigFile(path: string) {
@@ -61,4 +68,10 @@ async function loadConfigFromBundledFile(
 	);
 
 	await fsp.writeFile(tempFilename, bundledCode);
+
+	try {
+		return (await import(pathToFileURL(tempFilename).href)).config;
+	} finally {
+		fsp.unlink(tempFilename);
+	}
 }
