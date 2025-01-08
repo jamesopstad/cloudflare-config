@@ -96,6 +96,7 @@ export function getDevMiniflareOptions(
 						return {
 							name: workerConfig.name,
 							compatibilityDate: workerConfig.compatibilityDate,
+							compatibilityFlags: ['nodejs_als'],
 							modulesRoot: miniflareModulesRoot,
 							unsafeEvalBinding: '__VITE_UNSAFE_EVAL__',
 							bindings: {

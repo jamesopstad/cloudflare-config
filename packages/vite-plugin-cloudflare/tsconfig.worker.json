@@ -1,4 +1,8 @@
 {
 	"extends": "@vite-plugin-cloudflare/typescript-config/worker.json",
-	"include": ["src/asset-workers", "src/runner-worker"]
+	"include": [
+		"src/asset-workers",
+		"src/runner-worker",
+		"src/experimental/runner-worker"
+	]
 }

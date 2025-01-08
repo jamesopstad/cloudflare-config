@@ -59,6 +59,29 @@ export function cloudflare(pluginConfig: PluginConfig = {}): vite.Plugin {
 						: undefined,
 			};
 		},
+		resolveId(id) {
+			if (id === 'cloudflare:bindings') {
+				return `\0cloudflare:bindings`;
+			}
+		},
+		load(id) {
+			if (
+				id === '\0cloudflare:bindings' &&
+				resolvedPluginConfig.type === 'workers'
+			) {
+				return `
+					import { AsyncLocalStorage } from 'node:async_hooks';
+
+					const bindings = new AsyncLocalStorage();
+
+					export const vars = new Proxy({}, {
+						get(target, key, receiver) {
+							return \`vars_\${key}\`
+						}
+					});
+				`;
+			}
+		},
 		handleHotUpdate(options) {
 			if (options.file === resolvedPluginConfig.configPath) {
 				// TODO: await/handle errors

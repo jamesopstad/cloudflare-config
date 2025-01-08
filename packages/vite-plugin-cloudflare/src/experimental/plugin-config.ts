@@ -40,6 +40,7 @@ interface WorkersPluginConfig extends BasePluginConfig {
 	workers: Record<string, WorkerConfig>;
 	entryWorkerEnvironmentName: string;
 	resources: ConfigSchema['resources'];
+	bindings: any;
 }
 
 export type ResolvedPluginConfig = AssetsOnlyPluginConfig | WorkersPluginConfig;
@@ -47,6 +48,16 @@ export type ResolvedPluginConfig = AssetsOnlyPluginConfig | WorkersPluginConfig;
 // Worker names can only contain alphanumeric characters and '-' whereas environment names can only contain alphanumeric characters and '$', '_'
 function workerNameToEnvironmentName(workerName: string) {
 	return workerName.replaceAll('-', '_');
+}
+
+function extractBindings(resources: ConfigSchema['resources']) {
+	const vars: ConfigSchema['resources']['vars'] = {};
+
+	for (const [key, value] of Object.entries(resources.vars ?? {})) {
+		vars[`vars_${key}`] = value;
+	}
+
+	return { vars };
 }
 
 export async function resolvePluginConfig(
@@ -75,5 +86,6 @@ export async function resolvePluginConfig(
 		workers,
 		entryWorkerEnvironmentName,
 		resources: config.resources,
+		bindings: extractBindings(config.resources),
 	};
 }

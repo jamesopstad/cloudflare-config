@@ -50,7 +50,7 @@ export default defineConfig([
 		tsconfig: 'tsconfig.worker.json',
 	},
 	{
-		entry: ['src/runner-worker/index.ts'],
+		entry: ['src/experimental/runner-worker/index.ts'],
 		format: 'esm',
 		platform: 'neutral',
 		outDir: 'dist/experimental/runner-worker',
