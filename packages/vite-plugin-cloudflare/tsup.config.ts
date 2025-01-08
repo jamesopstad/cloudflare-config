@@ -38,4 +38,24 @@ export default defineConfig([
 		outDir: 'dist/experimental',
 		tsconfig: 'tsconfig.plugin.json',
 	},
+	{
+		entry: [
+			'src/asset-workers/router-worker.ts',
+			'src/asset-workers/asset-worker.ts',
+		],
+		format: 'esm',
+		platform: 'neutral',
+		outDir: 'dist/experimental/asset-workers',
+		external: ['cloudflare:workers'],
+		tsconfig: 'tsconfig.worker.json',
+	},
+	{
+		entry: ['src/runner-worker/index.ts'],
+		format: 'esm',
+		platform: 'neutral',
+		outDir: 'dist/experimental/runner-worker',
+		external: ['cloudflare:workers'],
+		noExternal: ['vite/module-runner'],
+		tsconfig: 'tsconfig.worker.json',
+	},
 ]);

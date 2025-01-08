@@ -41,7 +41,7 @@ async function bundleConfigFile(path: string) {
 					build.onLoad({ filter: /.*/ }, async (args) => {
 						if (args.with.type === 'cloudflare-worker') {
 							return {
-								contents: `export const __MODULE_PATH__ = ${JSON.stringify(args.path)}`,
+								contents: `export const __MODULE_PATH__ = ${JSON.stringify(args.path)};`,
 							};
 						}
 					});

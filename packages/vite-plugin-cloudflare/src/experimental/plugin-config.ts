@@ -12,16 +12,17 @@ export interface PluginConfig {
 
 type Defined<T> = Exclude<T, undefined>;
 
-interface AssetsOnlyConfig {
+export interface AssetsOnlyConfig {
 	name: Defined<Unstable_Config['name']>;
 	compatibilityDate: Defined<Unstable_Config['compatibility_date']>;
 	assets: Defined<Unstable_Config['assets']>;
 }
 
-interface WorkerConfig {
+export interface WorkerConfig {
 	name: Defined<Unstable_Config['name']>;
 	main: Defined<Unstable_Config['main']>;
 	compatibilityDate: Defined<Unstable_Config['compatibility_date']>;
+	assets?: any;
 }
 
 interface BasePluginConfig {
