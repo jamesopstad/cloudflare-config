@@ -13,15 +13,15 @@ export function defineConfig(config: ConfigInputSchema) {
 	return config;
 }
 
-export async function loadConfigFromFile(root: string) {
-	const resolvedPath = path.resolve(root, 'cloudflare.config.ts');
-	const tempDirectory = path.resolve(root, '.wrangler', 'tmp');
-
+export async function loadConfigFromFile(
+	configPath: string,
+	tempDirectory: string,
+) {
 	await fsp.mkdir(tempDirectory, { recursive: true });
 
-	const bundled = await bundleConfigFile(resolvedPath);
+	const bundled = await bundleConfigFile(configPath);
 	const config = await loadConfigFromBundledFile(
-		resolvedPath,
+		configPath,
 		bundled.code,
 		tempDirectory,
 	);

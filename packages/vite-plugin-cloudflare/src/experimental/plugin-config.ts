@@ -26,6 +26,7 @@ export interface WorkerConfig {
 }
 
 interface BasePluginConfig {
+	configPath: string;
 	persistState: PersistState;
 }
 
@@ -54,7 +55,9 @@ export async function resolvePluginConfig(
 ): Promise<ResolvedPluginConfig> {
 	const persistState = pluginConfig.persistState ?? true;
 	const root = userConfig.root ? path.resolve(userConfig.root) : process.cwd();
-	const config = await loadConfigFromFile(root);
+	const configPath = path.resolve(root, 'cloudflare.config.ts');
+	const tempDirectory = path.resolve(root, '.wrangler', 'tmp');
+	const config = await loadConfigFromFile(configPath, tempDirectory);
 
 	const entryWorkerConfig = config.entryWorker;
 	const entryWorkerEnvironmentName = workerNameToEnvironmentName(
@@ -67,6 +70,7 @@ export async function resolvePluginConfig(
 
 	return {
 		type: 'workers',
+		configPath,
 		persistState,
 		workers,
 		entryWorkerEnvironmentName,

@@ -59,6 +59,12 @@ export function cloudflare(pluginConfig: PluginConfig = {}): vite.Plugin {
 						: undefined,
 			};
 		},
+		handleHotUpdate(options) {
+			if (options.file === resolvedPluginConfig.configPath) {
+				// TODO: await/handle errors
+				options.server.restart();
+			}
+		},
 		async configureServer(viteDevServer) {
 			miniflare = new Miniflare(
 				getDevMiniflareOptions(resolvedPluginConfig, viteDevServer),
