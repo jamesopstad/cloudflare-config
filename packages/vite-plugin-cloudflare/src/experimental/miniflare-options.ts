@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Log, LogLevel, Response as MiniflareResponse } from 'miniflare';
 import * as vite from 'vite';
+import { cloudflareBuiltInModules } from './cloudflare-environment';
 import type { CloudflareDevEnvironment } from './cloudflare-environment';
 import type {
 	PersistState,
@@ -129,7 +130,7 @@ export function getDevMiniflareOptions(
 
 									// For some reason we need this here for cloudflare built-ins (e.g. `cloudflare:workers`) but not for node built-ins (e.g. `node:path`)
 									// See https://github.com/flarelabs-net/vite-plugin-cloudflare/issues/46
-									if (moduleId.startsWith('cloudflare:')) {
+									if (cloudflareBuiltInModules.includes(moduleId)) {
 										const result = {
 											externalize: moduleId,
 											type: 'builtin',

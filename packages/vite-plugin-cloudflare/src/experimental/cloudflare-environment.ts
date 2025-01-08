@@ -110,7 +110,7 @@ export class CloudflareDevEnvironment extends vite.DevEnvironment {
 	}
 }
 
-const cloudflareBuiltInModules = [
+export const cloudflareBuiltInModules = [
 	'cloudflare:email',
 	'cloudflare:sockets',
 	'cloudflare:workers',
@@ -146,7 +146,7 @@ export function createCloudflareEnvironmentOptions(
 				//       so the input value here serves both as the build input as well as the starting point for
 				//       dev pre-bundling crawling (were we not to set this input field we'd have to appropriately set
 				//       optimizeDeps.entries in the dev config)
-				input: workerConfig.main,
+				input: workerConfig.module,
 				external: [...cloudflareBuiltInModules, ...getNodeCompatExternals()],
 			},
 		},

@@ -192,7 +192,16 @@ export function createWorkerEntrypointWrapper(
 					);
 				}
 
-				return maybeFn.call(entrypointValue, arg, userEnv, this.ctx);
+				const bindingsStorage = await getWorkerEntryExport(
+					'cloudflare:bindings',
+					'bindingsStorage',
+				);
+
+				return bindingsStorage.run(userEnv, () => {
+					return maybeFn.call(entrypointValue, arg, {}, this.ctx);
+				});
+
+				// return maybeFn.call(entrypointValue, arg, userEnv, this.ctx);
 			} else if (typeof entrypointValue === 'function') {
 				// WorkerEntrypoint
 				const ctor = entrypointValue as WorkerEntrypointConstructor;
