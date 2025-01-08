@@ -1,7 +1,8 @@
 import * as vite from 'vite';
-import { resolvePluginConfig } from './config';
+import { resolvePluginConfig } from './plugin-config';
+import type { PluginConfig } from './plugin-config';
 
-export function cloudflare(): vite.Plugin {
+export function cloudflare(pluginConfig: PluginConfig = {}): vite.Plugin {
 	return {
 		name: 'vite-plugin-cloudflare',
 		async config(userConfig, env) {
@@ -9,9 +10,19 @@ export function cloudflare(): vite.Plugin {
 				return { appType: 'custom' };
 			}
 
-			const resolvedPluginConfig = await resolvePluginConfig(userConfig);
+			const resolvedPluginConfig = await resolvePluginConfig(
+				pluginConfig,
+				userConfig,
+			);
 
 			console.log(resolvedPluginConfig);
+
+			return {
+				appType: 'custom',
+				// resolve: {
+				// 	alias: getNodeCompatAliases()
+				// },
+			};
 		},
 	};
 }

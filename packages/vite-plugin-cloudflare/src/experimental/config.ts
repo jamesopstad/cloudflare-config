@@ -3,41 +3,9 @@ import * as fsp from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import * as vite from 'vite';
 import type { build } from 'esbuild';
 
-// Worker names can only contain alphanumeric characters and '-' whereas environment names can only contain alphanumeric characters and '$', '_'
-function workerNameToEnvironmentName(workerName: string) {
-	return workerName.replaceAll('-', '_');
-}
-
-export async function resolvePluginConfig(userConfig: vite.UserConfig) {
-	const root = userConfig.root ? path.resolve(userConfig.root) : process.cwd();
-	const config = await loadConfigFromFile(root);
-
-	const { module, ...entryWorkerConfig } = config.entryWorker;
-	const entryWorkerMain = module.__MODULE_PATH__;
-
-	assert(
-		entryWorkerMain,
-		`Path not found. Did you use the import assertion when importing the module?`,
-	);
-
-	const entryWorkerEnvironmentName = workerNameToEnvironmentName(
-		entryWorkerConfig.name,
-	);
-
-	const workers = {
-		[entryWorkerEnvironmentName]: {
-			...entryWorkerConfig,
-			main: entryWorkerMain,
-		},
-	};
-
-	return { type: 'workers', workers, entryWorkerEnvironmentName };
-}
-
-async function loadConfigFromFile(root: string) {
+export async function loadConfigFromFile(root: string) {
 	const resolvedPath = path.resolve(root, 'cloudflare.config.ts');
 	const tempDirectory = path.resolve(root, '.wrangler', 'tmp');
 
@@ -54,9 +22,9 @@ async function loadConfigFromFile(root: string) {
 }
 
 const _require = createRequire(import.meta.url);
+const esbuild = _require('esbuild');
 
 async function bundleConfigFile(path: string) {
-	const esbuild = _require('esbuild');
 	const result = await (esbuild.build as typeof build)({
 		entryPoints: [path],
 		write: false,
