@@ -29,4 +29,13 @@ export default defineConfig([
 		noExternal: ['vite/module-runner'],
 		tsconfig: 'tsconfig.worker.json',
 	},
+	// EXPERIMENTAL
+	{
+		entry: ['src/experimental/index.ts'],
+		format: 'esm',
+		platform: 'node',
+		dts: true,
+		outDir: 'dist/experimental',
+		tsconfig: 'tsconfig.plugin.json',
+	},
 ]);

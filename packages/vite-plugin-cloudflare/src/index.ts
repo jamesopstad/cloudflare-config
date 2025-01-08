@@ -8,7 +8,6 @@ import {
 	createCloudflareEnvironmentOptions,
 	initRunners,
 } from './cloudflare-environment';
-import { loadConfigFromFile } from './config';
 import { writeDeployConfig } from './deploy-config';
 import { getDevEntryWorker } from './dev';
 import {
@@ -36,12 +35,6 @@ export function cloudflare(pluginConfig: PluginConfig = {}): vite.Plugin {
 			if (env.isPreview) {
 				return { appType: 'custom' };
 			}
-
-			const root = userConfig.root
-				? path.resolve(userConfig.root)
-				: process.cwd();
-
-			await loadConfigFromFile(root);
 
 			resolvedPluginConfig = resolvePluginConfig(pluginConfig, userConfig);
 
