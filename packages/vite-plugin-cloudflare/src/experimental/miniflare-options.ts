@@ -10,6 +10,7 @@ import type {
 	ResolvedPluginConfig,
 	WorkerConfig,
 } from './plugin-config';
+import type { ConfigSchema } from '@flarelabs-net/cloudflare-config';
 import type { MiniflareOptions, SharedOptions, WorkerOptions } from 'miniflare';
 import type { FetchFunctionOptions } from 'vite/module-runner';
 
@@ -66,12 +67,27 @@ function getEntryWorkerConfig(
 	];
 }
 
+function extractBindings(resolvedPluginConfig: ResolvedPluginConfig) {
+	const vars: ConfigSchema['resources']['vars'] = {};
+
+	if (resolvedPluginConfig.type === 'workers') {
+		for (const [key, value] of Object.entries(
+			resolvedPluginConfig.resources.vars ?? {},
+		)) {
+			vars[`vars_${key}`] = value;
+		}
+	}
+
+	return { vars };
+}
+
 export function getDevMiniflareOptions(
 	resolvedPluginConfig: ResolvedPluginConfig,
 	viteDevServer: vite.ViteDevServer,
 ): MiniflareOptions {
 	const resolvedViteConfig = viteDevServer.config;
 	const entryWorkerConfig = getEntryWorkerConfig(resolvedPluginConfig);
+	const bindings = extractBindings(resolvedPluginConfig);
 
 	const userWorkers =
 		resolvedPluginConfig.type === 'workers'
@@ -83,8 +99,9 @@ export function getDevMiniflareOptions(
 							modulesRoot: miniflareModulesRoot,
 							unsafeEvalBinding: '__VITE_UNSAFE_EVAL__',
 							bindings: {
+								...bindings.vars,
 								__VITE_ROOT__: resolvedViteConfig.root,
-								__VITE_ENTRY_PATH__: workerConfig.main,
+								__VITE_ENTRY_PATH__: workerConfig.module,
 							},
 							serviceBindings: {
 								// ...(environmentName ===

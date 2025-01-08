@@ -1,7 +1,7 @@
-import assert from 'node:assert';
 import * as path from 'node:path';
+import { loadConfigFromFile } from '@flarelabs-net/cloudflare-config';
 import * as vite from 'vite';
-import { loadConfigFromFile } from './config';
+import type { ConfigSchema } from '@flarelabs-net/cloudflare-config';
 import type { Unstable_Config } from 'wrangler';
 
 export type PersistState = boolean | { path: string };
@@ -20,7 +20,7 @@ export interface AssetsOnlyConfig {
 
 export interface WorkerConfig {
 	name: Defined<Unstable_Config['name']>;
-	main: Defined<Unstable_Config['main']>;
+	module: Defined<Unstable_Config['main']>;
 	compatibilityDate: Defined<Unstable_Config['compatibility_date']>;
 	assets?: any;
 }
@@ -38,6 +38,7 @@ interface WorkersPluginConfig extends BasePluginConfig {
 	type: 'workers';
 	workers: Record<string, WorkerConfig>;
 	entryWorkerEnvironmentName: string;
+	resources: ConfigSchema['resources'];
 }
 
 export type ResolvedPluginConfig = AssetsOnlyPluginConfig | WorkersPluginConfig;
@@ -55,24 +56,20 @@ export async function resolvePluginConfig(
 	const root = userConfig.root ? path.resolve(userConfig.root) : process.cwd();
 	const config = await loadConfigFromFile(root);
 
-	const { module, ...entryWorkerConfig } = config.entryWorker;
-	const entryWorkerMain = module.__MODULE_PATH__;
-
-	assert(
-		entryWorkerMain,
-		`Path not found. Did you use the import assertion when importing the module?`,
-	);
-
+	const entryWorkerConfig = config.entryWorker;
 	const entryWorkerEnvironmentName = workerNameToEnvironmentName(
 		entryWorkerConfig.name,
 	);
 
 	const workers = {
-		[entryWorkerEnvironmentName]: {
-			...entryWorkerConfig,
-			main: entryWorkerMain,
-		},
+		[entryWorkerEnvironmentName]: entryWorkerConfig,
 	};
 
-	return { type: 'workers', persistState, workers, entryWorkerEnvironmentName };
+	return {
+		type: 'workers',
+		persistState,
+		workers,
+		entryWorkerEnvironmentName,
+		resources: config.resources,
+	};
 }

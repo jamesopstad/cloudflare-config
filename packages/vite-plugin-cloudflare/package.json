@@ -46,9 +46,9 @@
 	"devDependencies": {
 		"@cloudflare/workers-shared": "^0.7.0",
 		"@cloudflare/workers-types": "catalog:default",
+		"@flarelabs-net/cloudflare-config": "workspace:*",
 		"@types/node": "catalog:default",
 		"@vite-plugin-cloudflare/typescript-config": "workspace:*",
-		"esbuild": "^0.24.2",
 		"magic-string": "^0.30.12",
 		"tsup": "^8.3.0",
 		"typescript": "catalog:default",

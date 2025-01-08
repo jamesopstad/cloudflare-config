@@ -1,60 +1,85 @@
-import type { Unstable_RawEnvironment as RawEnvironment } from 'wrangler';
+import assert from 'node:assert';
+import * as fsp from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import * as path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { configSchema } from './schema';
+import type { ConfigInputSchema } from './schema';
+import type { build } from 'esbuild';
 
-type SnakeToCamelCase<T extends string> = T extends `${infer L}_${infer R}`
-	? `${L}${Capitalize<SnakeToCamelCase<R>>}`
-	: T;
+export type { ConfigSchema } from './schema';
 
-type KeysToCamelCase<T extends Record<string, any>> = {
-	[K in keyof T as SnakeToCamelCase<string & K>]: T[K];
-};
-
-type NormalizedRecord<T extends Record<string, any>> = Record<
-	string,
-	Omit<KeysToCamelCase<T>, 'binding'>
->;
-
-type Defined<T> = Exclude<T, undefined>;
-
-interface Resources extends Record<string, any> {
-	analyticsEngineDatasets?: NormalizedRecord<
-		Defined<RawEnvironment['analytics_engine_datasets']>[number]
-	>;
-	d1Databases?: NormalizedRecord<
-		Defined<RawEnvironment['d1_databases']>[number]
-	>;
-	dispatchNamespaces?: NormalizedRecord<
-		Defined<RawEnvironment['dispatch_namespaces']>[number]
-	>;
-	hyperdrive?: NormalizedRecord<Defined<RawEnvironment['hyperdrive']>[number]>;
-	kvNamespaces?: NormalizedRecord<
-		Defined<RawEnvironment['kv_namespaces']>[number]
-	>;
-	mtlsCertificates?: NormalizedRecord<
-		Defined<RawEnvironment['mtls_certificates']>[number]
-	>;
-	queueProducers?: NormalizedRecord<
-		Defined<Defined<RawEnvironment['queues']>['producers']>[number]
-	>;
-	r2Buckets?: NormalizedRecord<Defined<RawEnvironment['r2_buckets']>[number]>;
-	sendEmail?: NormalizedRecord<Defined<RawEnvironment['send_email']>[number]>;
-	vectorize?: NormalizedRecord<Defined<RawEnvironment['vectorize']>[number]>;
-}
-
-type Environment = {
-	accountId?: Defined<RawEnvironment['account_id']>;
-	vars?: Defined<RawEnvironment['vars']>;
-} & Resources;
-
-type Environments = Record<string, Environment>;
-
-interface BaseWorker {
-	name: string;
-	module: Record<string, any>;
-	compatibilityDate: `${string}-${string}-${string}`;
-}
-
-interface EntryWorker extends BaseWorker {}
-
-export function defineConfig(config: { entryWorker: EntryWorker }) {
+export function defineConfig(config: ConfigInputSchema) {
 	return config;
+}
+
+export async function loadConfigFromFile(root: string) {
+	const resolvedPath = path.resolve(root, 'cloudflare.config.ts');
+	const tempDirectory = path.resolve(root, '.wrangler', 'tmp');
+
+	await fsp.mkdir(tempDirectory, { recursive: true });
+
+	const bundled = await bundleConfigFile(resolvedPath);
+	const config = await loadConfigFromBundledFile(
+		resolvedPath,
+		bundled.code,
+		tempDirectory,
+	);
+
+	return configSchema.parse(config);
+}
+
+const _require = createRequire(import.meta.url);
+const esbuild = _require('esbuild');
+
+async function bundleConfigFile(path: string) {
+	const result = await (esbuild.build as typeof build)({
+		entryPoints: [path],
+		write: false,
+		target: [`node${process.versions.node}`],
+		platform: 'node',
+		bundle: true,
+		format: 'esm',
+		mainFields: ['main'],
+		sourcemap: 'inline',
+		plugins: [
+			{
+				name: 'cloudflare-worker-imports',
+				setup(build) {
+					build.onLoad({ filter: /.*/ }, async (args) => {
+						if (args.with.type === 'cloudflare-worker') {
+							return {
+								contents: `export const __MODULE_PATH__ = ${JSON.stringify(args.path)};`,
+							};
+						}
+					});
+				},
+			},
+		],
+	});
+	const file = result.outputFiles[0];
+
+	assert(file, `No output file`);
+
+	return { code: file.text };
+}
+
+async function loadConfigFromBundledFile(
+	filename: string,
+	bundledCode: string,
+	tempDirectory: string,
+) {
+	const hash = `timestamp-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+	const tempFilename = path.join(
+		tempDirectory,
+		`${path.basename(filename)}.${hash}.mjs`,
+	);
+
+	await fsp.writeFile(tempFilename, bundledCode);
+
+	try {
+		return (await import(pathToFileURL(tempFilename).href)).config;
+	} finally {
+		fsp.unlink(tempFilename);
+	}
 }
