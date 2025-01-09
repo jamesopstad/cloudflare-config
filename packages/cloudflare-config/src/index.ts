@@ -4,12 +4,43 @@ import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { configSchema } from './schema';
-import type { ConfigInputSchema } from './schema';
+import type { VarsInput } from './schema';
+import type {
+	ExportedHandler,
+	Rpc,
+} from '@cloudflare/workers-types/experimental';
 import type { build } from 'esbuild';
 
-export type { ConfigSchema } from './schema';
+export type { Config } from './schema';
 
-export function defineConfig(config: ConfigInputSchema) {
+interface Constructor<T> {
+	new (...args: any[]): T;
+}
+
+export function defineConfig<
+	const TWorkers extends Record<
+		string,
+		{ compatibilityDate: string; module: Record<string, unknown> }
+	>,
+	const TServices extends {
+		[K in keyof TServices]: {
+			worker: keyof TWorkers;
+			entrypoint: keyof {
+				[TExport in keyof TWorkers[TServices[K]['worker']]['module'] as TWorkers[TServices[K]['worker']]['module'][TExport] extends infer T
+					? T extends Constructor<Rpc.WorkerEntrypointBranded>
+						? TExport
+						: T extends ExportedHandler
+							? TExport
+							: never
+					: never]: never;
+			};
+		};
+	},
+>(config: {
+	workers: TWorkers;
+	entryWorker: keyof TWorkers;
+	resources?: { vars?: VarsInput; services?: TServices };
+}) {
 	return config;
 }
 

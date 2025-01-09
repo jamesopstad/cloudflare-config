@@ -2,15 +2,22 @@ import { defineConfig } from '@flarelabs-net/cloudflare-config';
 import * as worker from './src' with { type: 'cloudflare-worker' };
 
 export const config = defineConfig({
-	name: 'example-app',
-	resources: {
-		vars: {
-			exampleVar: 'Example Var',
+	workers: {
+		workerA: {
+			compatibilityDate: '2024-12-05',
+			module: worker,
 		},
 	},
-	entryWorker: {
-		name: 'worker',
-		module: worker,
-		compatibilityDate: '2024-12-05',
+	entryWorker: 'workerA',
+	resources: {
+		vars: {
+			exampleVar: 'Example var',
+		},
+		services: {
+			exampleService: {
+				worker: 'workerA',
+				entrypoint: 'default',
+			},
+		},
 	},
 });

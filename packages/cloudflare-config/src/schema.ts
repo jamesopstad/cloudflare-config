@@ -9,12 +9,13 @@ const jsonSchema: z.ZodType<Json> = z.lazy(() =>
 	z.union([literalSchema, z.array(jsonSchema), z.record(jsonSchema)]),
 );
 
+export const varsSchema = z.record(jsonSchema);
+
 const resourcesSchema = z.object({
-	vars: z.record(jsonSchema).optional(),
+	vars: varsSchema.optional(),
 });
 
-const entryWorkerSchema = z.object({
-	name: z.string(),
+const workerSchema = z.object({
 	// TODO: enforce date format
 	compatibilityDate: z.string(),
 	module: z
@@ -27,10 +28,12 @@ const entryWorkerSchema = z.object({
 });
 
 export const configSchema = z.object({
-	name: z.string(),
+	// name: z.string(),
+	workers: z.record(z.string(), workerSchema),
+	entryWorker: z.string(),
 	resources: resourcesSchema.default({}),
-	entryWorker: entryWorkerSchema,
 });
 
-export type ConfigInputSchema = z.input<typeof configSchema>;
-export type ConfigSchema = z.output<typeof configSchema>;
+export type VarsInput = z.input<typeof varsSchema>;
+export type ConfigInput = z.input<typeof configSchema>;
+export type Config = z.output<typeof configSchema>;

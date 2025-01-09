@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 import { loadConfigFromFile } from '@flarelabs-net/cloudflare-config';
 import * as vite from 'vite';
-import type { ConfigSchema } from '@flarelabs-net/cloudflare-config';
+import type { Config } from '@flarelabs-net/cloudflare-config';
 import type { Unstable_Config } from 'wrangler';
 
 export type PersistState = boolean | { path: string };
@@ -39,7 +39,7 @@ interface WorkersPluginConfig extends BasePluginConfig {
 	type: 'workers';
 	workers: Record<string, WorkerConfig>;
 	entryWorkerEnvironmentName: string;
-	resources: ConfigSchema['resources'];
+	resources: Config['resources'];
 	bindings: any;
 }
 
@@ -50,8 +50,8 @@ function workerNameToEnvironmentName(workerName: string) {
 	return workerName.replaceAll('-', '_');
 }
 
-function extractBindings(resources: ConfigSchema['resources']) {
-	const vars: ConfigSchema['resources']['vars'] = {};
+function extractBindings(resources: Config['resources']) {
+	const vars: Config['resources']['vars'] = {};
 
 	for (const [key, value] of Object.entries(resources.vars ?? {})) {
 		vars[`vars_${key}`] = value;
@@ -69,22 +69,19 @@ export async function resolvePluginConfig(
 	const configPath = path.resolve(root, 'cloudflare.config.ts');
 	const tempDirectory = path.resolve(root, '.wrangler', 'tmp');
 	const config = await loadConfigFromFile(configPath, tempDirectory);
-
-	const entryWorkerConfig = config.entryWorker;
-	const entryWorkerEnvironmentName = workerNameToEnvironmentName(
-		entryWorkerConfig.name,
+	const workers = Object.fromEntries(
+		Object.entries(config.workers).map(([name, workerConfig]) => [
+			name,
+			{ ...workerConfig, name },
+		]),
 	);
-
-	const workers = {
-		[entryWorkerEnvironmentName]: entryWorkerConfig,
-	};
 
 	return {
 		type: 'workers',
 		configPath,
 		persistState,
 		workers,
-		entryWorkerEnvironmentName,
+		entryWorkerEnvironmentName: config.entryWorker,
 		resources: config.resources,
 		bindings: extractBindings(config.resources),
 	};
