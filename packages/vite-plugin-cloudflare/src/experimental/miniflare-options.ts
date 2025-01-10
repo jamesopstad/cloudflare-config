@@ -131,9 +131,6 @@ export function getDevMiniflareOptions(
 	const miniflareBindings = getMiniflareBindings(resolvedPluginConfig);
 	const workerToWorkerEntrypointExportsMap =
 		getWorkerToWorkerEntrypointExportsMap(resolvedPluginConfig);
-	// const entryWorkerConfig = getEntryWorkerConfig(resolvedPluginConfig);
-
-	console.log(miniflareBindings);
 
 	const userWorkers =
 		resolvedPluginConfig.type === 'workers'

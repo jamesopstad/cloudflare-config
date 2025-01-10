@@ -90,7 +90,7 @@ export async function createModuleRunner(
 	);
 }
 
-export async function getWorkerEntryExport(path: string, entrypoint: string) {
+export async function getModuleExport(path: string, entrypoint: string) {
 	const module = await moduleRunner.import(path);
 	const entrypointValue =
 		typeof module === 'object' &&
@@ -103,4 +103,16 @@ export async function getWorkerEntryExport(path: string, entrypoint: string) {
 	}
 
 	return entrypointValue;
+}
+
+export async function runWithBindings(
+	userEnv: Record<string, unknown>,
+	callback: () => unknown,
+) {
+	const bindingsStorage = await getModuleExport(
+		'cloudflare:bindings',
+		'__bindingsStorage__',
+	);
+
+	return bindingsStorage.run(userEnv, callback);
 }

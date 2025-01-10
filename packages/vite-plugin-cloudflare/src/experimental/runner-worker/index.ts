@@ -5,7 +5,11 @@ import {
 } from 'cloudflare:workers';
 import { INIT_PATH } from '../../shared';
 import { stripInternalEnv } from './env';
-import { createModuleRunner, getWorkerEntryExport } from './module-runner';
+import {
+	createModuleRunner,
+	getModuleExport,
+	runWithBindings,
+} from './module-runner';
 import type { WrapperEnv } from './env';
 
 interface WorkerEntrypointConstructor<T = unknown> {
@@ -102,7 +106,7 @@ async function getWorkerEntrypointRpcProperty(
 	key: string,
 ): Promise<unknown> {
 	const entryPath = this.env.__VITE_ENTRY_PATH__;
-	const ctor = (await getWorkerEntryExport(
+	const ctor = (await getModuleExport(
 		entryPath,
 		entrypoint,
 	)) as WorkerEntrypointConstructor;
@@ -179,7 +183,7 @@ export function createWorkerEntrypointWrapper(
 				}
 			}
 
-			const entrypointValue = await getWorkerEntryExport(entryPath, entrypoint);
+			const entrypointValue = await getModuleExport(entryPath, entrypoint);
 			const userEnv = stripInternalEnv(this.env);
 
 			if (typeof entrypointValue === 'object' && entrypointValue !== null) {
@@ -192,16 +196,11 @@ export function createWorkerEntrypointWrapper(
 					);
 				}
 
-				const bindingsStorage = await getWorkerEntryExport(
-					'cloudflare:bindings',
-					'bindingsStorage',
-				);
+				// return maybeFn.call(entrypointValue, arg, userEnv, this.ctx);
 
-				return bindingsStorage.run(userEnv, () => {
+				return runWithBindings(userEnv, () => {
 					return maybeFn.call(entrypointValue, arg, {}, this.ctx);
 				});
-
-				// return maybeFn.call(entrypointValue, arg, userEnv, this.ctx);
 			} else if (typeof entrypointValue === 'function') {
 				// WorkerEntrypoint
 				const ctor = entrypointValue as WorkerEntrypointConstructor;
@@ -221,7 +220,11 @@ export function createWorkerEntrypointWrapper(
 					);
 				}
 
-				return (maybeFn as (arg: unknown) => unknown).call(instance, arg);
+				// return (maybeFn as (arg: unknown) => unknown).call(instance, arg);
+
+				return runWithBindings(userEnv, () => {
+					return (maybeFn as (arg: unknown) => unknown).call(instance, arg);
+				});
 			} else {
 				return new TypeError(
 					`Expected ${entrypoint} export of ${entryPath} to be an object or a class. Got ${entrypointValue}.`,
@@ -310,7 +313,7 @@ export function createDurableObjectWrapper(
 
 		async [kEnsureInstance]() {
 			const entryPath = this.env.__VITE_ENTRY_PATH__;
-			const ctor = (await getWorkerEntryExport(
+			const ctor = (await getModuleExport(
 				entryPath,
 				className,
 			)) as DurableObjectConstructor;
@@ -362,7 +365,7 @@ export function createWorkflowEntrypointWrapper(
 	for (const key of WORKFLOW_ENTRYPOINT_KEYS) {
 		Wrapper.prototype[key] = async function (...args: unknown[]) {
 			const entryPath = this.env.__VITE_ENTRY_PATH__;
-			const ctor = (await getWorkerEntryExport(
+			const ctor = (await getModuleExport(
 				entryPath,
 				className,
 			)) as WorkflowEntrypointConstructor;
