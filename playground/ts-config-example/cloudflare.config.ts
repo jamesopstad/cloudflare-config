@@ -16,8 +16,14 @@ export const config = defineConfig({
 		services: {
 			exampleService: {
 				worker: 'workerA',
-				entrypoint: 'default',
+				export: 'NamedEntrypoint',
 			},
 		},
 	},
 });
+
+declare module 'cloudflare:bindings' {
+	interface Register {
+		config: typeof config;
+	}
+}

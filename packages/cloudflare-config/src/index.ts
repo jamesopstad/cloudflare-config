@@ -5,41 +5,29 @@ import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { configSchema } from './schema';
 import type { VarsInput } from './schema';
-import type {
-	ExportedHandler,
-	Rpc,
-} from '@cloudflare/workers-types/experimental';
 import type { build } from 'esbuild';
 
 export type { Config } from './schema';
 
-interface Constructor<T> {
-	new (...args: any[]): T;
-}
-
 export function defineConfig<
 	const TWorkers extends Record<
 		string,
-		{ compatibilityDate: string; module: Record<string, unknown> }
+		{ compatibilityDate: string; module: Record<string, any> }
 	>,
+	const TVars extends VarsInput,
 	const TServices extends {
 		[K in keyof TServices]: {
 			worker: keyof TWorkers;
-			entrypoint: keyof {
-				[TExport in keyof TWorkers[TServices[K]['worker']]['module'] as TWorkers[TServices[K]['worker']]['module'][TExport] extends infer T
-					? T extends Constructor<Rpc.WorkerEntrypointBranded>
-						? TExport
-						: T extends ExportedHandler
-							? TExport
-							: never
-					: never]: never;
-			};
+			export: keyof TWorkers[TServices[K]['worker']]['module'];
 		};
 	},
 >(config: {
 	workers: TWorkers;
 	entryWorker: keyof TWorkers;
-	resources?: { vars?: VarsInput; services?: TServices };
+	resources?: {
+		vars?: TVars;
+		services?: TServices;
+	};
 }) {
 	return config;
 }

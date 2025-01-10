@@ -1,4 +1,11 @@
 {
-	"extends": ["@vite-plugin-cloudflare/typescript-config/worker.json"],
+	"extends": ["@vite-plugin-cloudflare/typescript-config/base.json"],
+	"compilerOptions": {
+		"types": [
+			"@flarelabs-net/cloudflare-config/bindings",
+			"@cloudflare/workers-types/experimental",
+			"vite/client"
+		]
+	},
 	"include": ["src", "cloudflare.config.ts"]
 }

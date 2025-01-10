@@ -13,12 +13,14 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
+		},
+		"./bindings": {
+			"types": "./bindings/index.d.ts"
 		}
 	},
-	"main": "./dist/index.js",
-	"types": "./dist/index.d.ts",
 	"files": [
-		"dist"
+		"dist",
+		"bindings"
 	],
 	"scripts": {
 		"build": "tsup",
