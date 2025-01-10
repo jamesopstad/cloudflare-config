@@ -85,9 +85,6 @@ importers:
       typescript:
         specifier: catalog:default
         version: 5.7.2
-      wrangler:
-        specifier: catalog:default
-        version: 3.94.0(@cloudflare/workers-types@4.20241205.0)
 
   packages/typescript-config: {}
 

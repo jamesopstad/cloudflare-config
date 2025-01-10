@@ -36,7 +36,6 @@
 		"@types/node": "catalog:default",
 		"@vite-plugin-cloudflare/typescript-config": "workspace:*",
 		"tsup": "^8.3.0",
-		"typescript": "catalog:default",
-		"wrangler": "catalog:default"
+		"typescript": "catalog:default"
 	}
 }
