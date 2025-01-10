@@ -1,5 +1,5 @@
 {
-	"name": "@playground/ts-config-example",
+	"name": "@playground/app-config",
 	"private": true,
 	"type": "module",
 	"scripts": {
