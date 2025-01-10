@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 import { loadConfigFromFile } from '@flarelabs-net/cloudflare-config';
 import * as vite from 'vite';
-import type { Config } from '@flarelabs-net/cloudflare-config';
+import type { ConfigOutput } from '@flarelabs-net/cloudflare-config';
 import type { Unstable_Config } from 'wrangler';
 
 export type PersistState = boolean | { path: string };
@@ -39,7 +39,7 @@ interface WorkersPluginConfig extends BasePluginConfig {
 	type: 'workers';
 	workers: Record<string, WorkerConfig>;
 	entryWorkerEnvironmentName: string;
-	resources: Config['resources'];
+	resources: ConfigOutput['resources'];
 }
 
 export type ResolvedPluginConfig = AssetsOnlyPluginConfig | WorkersPluginConfig;

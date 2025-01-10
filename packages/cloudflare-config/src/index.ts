@@ -4,31 +4,39 @@ import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { configSchema } from './schema';
-import type { VarsInput } from './schema';
+import type {
+	ConfigInput,
+	ServicesInput,
+	VarsInput,
+	WorkersInput,
+} from './schema';
 import type { build } from 'esbuild';
 
-export type { Config } from './schema';
+export type { ConfigOutput } from './schema';
 
-export function defineConfig<
-	const TWorkers extends Record<
-		string,
-		{ compatibilityDate: string; module: Record<string, any> }
-	>,
-	const TVars extends VarsInput,
-	const TServices extends {
-		[K in keyof TServices]: {
-			worker: keyof TWorkers;
-			export: keyof TWorkers[TServices[K]['worker']]['module'];
-		};
-	},
->(config: {
+interface Config<
+	TWorkers extends WorkersInput,
+	TVars extends VarsInput,
+	TServices extends ServicesInput,
+> extends ConfigInput {
 	workers: TWorkers;
-	entryWorker: keyof TWorkers;
-	resources?: {
+	entryWorker: keyof TWorkers & string;
+	resources: {
 		vars?: TVars;
 		services?: TServices;
 	};
-}) {
+}
+
+export function defineConfig<
+	const TWorkers extends WorkersInput,
+	const TVars extends VarsInput,
+	const TServices extends {
+		[K in keyof TServices]: {
+			worker: keyof TWorkers & string;
+			export: keyof TWorkers[TServices[K]['worker']]['module'] & string;
+		};
+	},
+>(config: Config<TWorkers, TVars, TServices>) {
 	return config;
 }
 

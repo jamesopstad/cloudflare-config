@@ -25,25 +25,29 @@ const resourcesSchema = z.object({
 	services: servicesSchema.optional(),
 });
 
-const workerSchema = z.object({
-	// TODO: enforce date format
-	compatibilityDate: z.string(),
-	module: z
-		.record(z.string(), z.unknown())
-		.pipe(
-			z
-				.object({ __MODULE_PATH__: z.string() })
-				.transform((module) => module.__MODULE_PATH__),
-		),
-});
+const workersSchema = z.record(
+	z.object({
+		// TODO: enforce date format
+		compatibilityDate: z.string(),
+		module: z
+			.record(z.string(), z.any())
+			.pipe(
+				z
+					.object({ __MODULE_PATH__: z.string() })
+					.transform((module) => module.__MODULE_PATH__),
+			),
+	}),
+);
 
 export const configSchema = z.object({
-	// name: z.string(),
-	workers: z.record(z.string(), workerSchema),
+	name: z.string(),
+	workers: workersSchema,
 	entryWorker: z.string(),
 	resources: resourcesSchema.default({}),
 });
 
+export type WorkersInput = z.input<typeof workersSchema>;
 export type VarsInput = z.input<typeof varsSchema>;
+export type ServicesInput = z.input<typeof servicesSchema>;
 export type ConfigInput = z.input<typeof configSchema>;
-export type Config = z.output<typeof configSchema>;
+export type ConfigOutput = z.output<typeof configSchema>;
