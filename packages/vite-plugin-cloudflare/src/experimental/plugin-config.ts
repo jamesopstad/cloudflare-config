@@ -40,7 +40,6 @@ interface WorkersPluginConfig extends BasePluginConfig {
 	workers: Record<string, WorkerConfig>;
 	entryWorkerEnvironmentName: string;
 	resources: Config['resources'];
-	bindings: any;
 }
 
 export type ResolvedPluginConfig = AssetsOnlyPluginConfig | WorkersPluginConfig;
@@ -48,16 +47,6 @@ export type ResolvedPluginConfig = AssetsOnlyPluginConfig | WorkersPluginConfig;
 // Worker names can only contain alphanumeric characters and '-' whereas environment names can only contain alphanumeric characters and '$', '_'
 function workerNameToEnvironmentName(workerName: string) {
 	return workerName.replaceAll('-', '_');
-}
-
-function extractBindings(resources: Config['resources']) {
-	const vars: Config['resources']['vars'] = {};
-
-	for (const [key, value] of Object.entries(resources.vars ?? {})) {
-		vars[`vars_${key}`] = value;
-	}
-
-	return { vars };
 }
 
 export async function resolvePluginConfig(
@@ -69,9 +58,12 @@ export async function resolvePluginConfig(
 	const configPath = path.resolve(root, 'cloudflare.config.ts');
 	const tempDirectory = path.resolve(root, '.wrangler', 'tmp');
 	const config = await loadConfigFromFile(configPath, tempDirectory);
+	const entryWorkerEnvironmentName = workerNameToEnvironmentName(
+		config.entryWorker,
+	);
 	const workers = Object.fromEntries(
 		Object.entries(config.workers).map(([name, workerConfig]) => [
-			name,
+			workerNameToEnvironmentName(name),
 			{ ...workerConfig, name },
 		]),
 	);
@@ -81,8 +73,7 @@ export async function resolvePluginConfig(
 		configPath,
 		persistState,
 		workers,
-		entryWorkerEnvironmentName: config.entryWorker,
+		entryWorkerEnvironmentName,
 		resources: config.resources,
-		bindings: extractBindings(config.resources),
 	};
 }

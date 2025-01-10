@@ -65,18 +65,21 @@ export function cloudflare(pluginConfig: PluginConfig = {}): vite.Plugin {
 			}
 		},
 		load(id) {
-			if (
-				id === '\0cloudflare:bindings' &&
-				resolvedPluginConfig.type === 'workers'
-			) {
+			if (id === '\0cloudflare:bindings') {
 				return `
 					import { AsyncLocalStorage } from 'node:async_hooks';
 
 					export const bindingsStorage = new AsyncLocalStorage();
 
 					export const vars = new Proxy({}, {
-						get(target, key, receiver) {
+						get(_, key) {
 							return bindingsStorage.getStore()[\`vars_\${key}\`];
+						}
+					});
+
+					export const services = new Proxy({}, {
+						get(_, key) {
+							return bindingsStorage.getStore()[\`services_\${key}\`];
 						}
 					});
 				`;

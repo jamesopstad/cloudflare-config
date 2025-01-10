@@ -15,10 +15,10 @@ export class NamedEntrypoint extends WorkerEntrypoint {
 
 export default {
 	async fetch(request) {
-		// return Response.json({
-		// 	value: await services.exampleService.add(1, 2),
-		// });
+		return Response.json({
+			value: await services.exampleService.add(1, 2),
+		});
 		// return services.exampleService
-		return new Response(`The var is ${vars.exampleVar}`);
+		// return new Response(`The var is ${vars.exampleVar}`);
 	},
 } satisfies ExportedHandler;

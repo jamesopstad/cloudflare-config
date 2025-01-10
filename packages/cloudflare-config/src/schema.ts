@@ -11,8 +11,18 @@ const jsonSchema: z.ZodType<Json> = z.lazy(() =>
 
 export const varsSchema = z.record(jsonSchema);
 
+const servicesSchema = z.record(
+	z.object({
+		worker: z.string(),
+		export: z
+			.string()
+			.transform((value) => (value === 'default' ? undefined : value)),
+	}),
+);
+
 const resourcesSchema = z.object({
 	vars: varsSchema.optional(),
+	services: servicesSchema.optional(),
 });
 
 const workerSchema = z.object({

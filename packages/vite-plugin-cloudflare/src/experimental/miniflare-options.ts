@@ -11,7 +11,6 @@ import type {
 	ResolvedPluginConfig,
 	WorkerConfig,
 } from './plugin-config';
-import type { ConfigSchema } from '@flarelabs-net/cloudflare-config';
 import type { MiniflareOptions, SharedOptions, WorkerOptions } from 'miniflare';
 import type { FetchFunctionOptions } from 'vite/module-runner';
 
@@ -68,18 +67,60 @@ function getEntryWorkerConfig(
 	];
 }
 
-function extractBindings(resolvedPluginConfig: ResolvedPluginConfig) {
-	const vars: ConfigSchema['resources']['vars'] = {};
+function getMiniflareBindings(resolvedPluginConfig: ResolvedPluginConfig) {
+	const bindings: WorkerOptions['bindings'] = {};
+	const serviceBindings: WorkerOptions['serviceBindings'] = {};
 
 	if (resolvedPluginConfig.type === 'workers') {
-		for (const [key, value] of Object.entries(
-			resolvedPluginConfig.resources.vars ?? {},
-		)) {
-			vars[`vars_${key}`] = value;
+		const { resources } = resolvedPluginConfig;
+
+		for (const [key, value] of Object.entries(resources.vars ?? {})) {
+			bindings[`vars_${key}`] = value;
+		}
+
+		for (const [key, value] of Object.entries(resources.services ?? {})) {
+			serviceBindings[`services_${key}`] = {
+				name: value.worker,
+				entrypoint: value.export,
+			};
 		}
 	}
 
-	return { vars };
+	return { bindings, serviceBindings };
+}
+
+function missingWorkerErrorMessage(workerName: string) {
+	return `${workerName} does not match a worker name.`;
+}
+
+function getWorkerToWorkerEntrypointExportsMap(
+	resolvedPluginConfig: ResolvedPluginConfig,
+) {
+	if (resolvedPluginConfig.type === 'assets-only') {
+		return new Map<string, Set<string>>();
+	}
+
+	const workerToWorkerEntrypointExportsMap = new Map(
+		Object.values(resolvedPluginConfig.workers).map((workerConfig) => [
+			workerConfig.name,
+			new Set<string>(),
+		]),
+	);
+
+	for (const service of Object.values(
+		resolvedPluginConfig.resources.services ?? {},
+	)) {
+		if (service.export) {
+			const entrypointExports = workerToWorkerEntrypointExportsMap.get(
+				service.worker,
+			);
+			assert(entrypointExports, missingWorkerErrorMessage(service.worker));
+
+			entrypointExports.add(service.export);
+		}
+	}
+
+	return workerToWorkerEntrypointExportsMap;
 }
 
 export function getDevMiniflareOptions(
@@ -87,25 +128,64 @@ export function getDevMiniflareOptions(
 	viteDevServer: vite.ViteDevServer,
 ): MiniflareOptions {
 	const resolvedViteConfig = viteDevServer.config;
-	const entryWorkerConfig = getEntryWorkerConfig(resolvedPluginConfig);
-	const bindings = extractBindings(resolvedPluginConfig);
+	const miniflareBindings = getMiniflareBindings(resolvedPluginConfig);
+	const workerToWorkerEntrypointExportsMap =
+		getWorkerToWorkerEntrypointExportsMap(resolvedPluginConfig);
+	// const entryWorkerConfig = getEntryWorkerConfig(resolvedPluginConfig);
+
+	console.log(miniflareBindings);
 
 	const userWorkers =
 		resolvedPluginConfig.type === 'workers'
 			? Object.entries(resolvedPluginConfig.workers).map(
 					([environmentName, workerConfig]) => {
+						const wrappers = [
+							`import { createWorkerEntrypointWrapper, createDurableObjectWrapper, createWorkflowEntrypointWrapper } from '${RUNNER_PATH}';`,
+							`export default createWorkerEntrypointWrapper('default');`,
+						];
+
+						const workerEntrypointExports =
+							workerToWorkerEntrypointExportsMap.get(workerConfig.name);
+						assert(
+							workerEntrypointExports,
+							`WorkerEntrypoint exports not found for worker ${workerConfig.name}`,
+						);
+
+						for (const entrypointExport of [
+							...workerEntrypointExports,
+						].sort()) {
+							wrappers.push(
+								`export const ${entrypointExport} = createWorkerEntrypointWrapper('${entrypointExport}');`,
+							);
+						}
+
 						return {
 							name: workerConfig.name,
 							compatibilityDate: workerConfig.compatibilityDate,
 							compatibilityFlags: ['nodejs_als'],
 							modulesRoot: miniflareModulesRoot,
+							modules: [
+								{
+									type: 'ESModule',
+									path: path.join(miniflareModulesRoot, WRAPPER_PATH),
+									contents: wrappers.join('\n'),
+								},
+								{
+									type: 'ESModule',
+									path: path.join(miniflareModulesRoot, RUNNER_PATH),
+									contents: fs.readFileSync(
+										fileURLToPath(new URL(RUNNER_PATH, import.meta.url)),
+									),
+								},
+							],
 							unsafeEvalBinding: '__VITE_UNSAFE_EVAL__',
 							bindings: {
-								...bindings.vars,
+								...miniflareBindings.bindings,
 								__VITE_ROOT__: resolvedViteConfig.root,
 								__VITE_ENTRY_PATH__: workerConfig.module,
 							},
 							serviceBindings: {
+								...miniflareBindings.serviceBindings,
 								// ...(environmentName ===
 								// 	resolvedPluginConfig.entryWorkerEnvironmentName &&
 								// workerConfig.assets?.binding
@@ -168,32 +248,7 @@ export function getDevMiniflareOptions(
 			resolvedViteConfig.root,
 			resolvedPluginConfig.persistState,
 		),
-		workers: [
-			...userWorkers.map((workerOptions) => {
-				const wrappers = [
-					`import { createWorkerEntrypointWrapper, createDurableObjectWrapper, createWorkflowEntrypointWrapper } from '${RUNNER_PATH}';`,
-					`export default createWorkerEntrypointWrapper('default');`,
-				];
-
-				return {
-					...workerOptions,
-					modules: [
-						{
-							type: 'ESModule',
-							path: path.join(miniflareModulesRoot, WRAPPER_PATH),
-							contents: wrappers.join('\n'),
-						},
-						{
-							type: 'ESModule',
-							path: path.join(miniflareModulesRoot, RUNNER_PATH),
-							contents: fs.readFileSync(
-								fileURLToPath(new URL(RUNNER_PATH, import.meta.url)),
-							),
-						},
-					],
-				} satisfies WorkerOptions;
-			}),
-		],
+		workers: [...userWorkers],
 	};
 }
 
